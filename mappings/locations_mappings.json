@@ -204,6 +204,9 @@
           "gps": {
             "type": "geo_point"
           },
+          "serviceable_area_h3": {
+            "type": "keyword"
+          },
           "id": {
             "type": "keyword"
           },

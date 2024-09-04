@@ -8,6 +8,7 @@ from funcy import get_in, project
 
 from business_rule_validations.item import validate_item_level
 from utils.dictionary_utils import safe_get_in, safe_int_parse
+from utils.h3_utils import polygon_to_h3_indices
 from utils.iso_time_utils import calculate_duration_in_seconds
 from utils.math_utils import create_simple_circle_polygon
 
@@ -91,6 +92,7 @@ def enrich_serviceability_in_item(item, serviceability_map):
                 "type": "Polygon",
                 "coordinates": coordinates
             }
+            item_location["serviceable_area_h3"] = polygon_to_h3_indices(item_location["polygons"])
 
         except JSONDecodeError:
             raise Exception("Serviceability JSON string parsing error")
