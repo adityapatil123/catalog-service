@@ -1,5 +1,6 @@
 import functools
 import threading
+import concurrent.futures
 import pika
 from config import get_config_by_name
 from logger.custom_logging import log, log_error
@@ -51,6 +52,8 @@ def acknowledge_message(ch, delivery_tag, body, success=True):
         log_error(f"Failed to ack message {body}: {e}")
 
 def consume_message(connection, channel, queue_name, consume_fn):
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=get_config_by_name('CONSUMER_MAX_WORKERS', 10))
+
     def do_work(ch, delivery_tag, body):
         thread_id = threading.get_ident()
         log(f'Thread id: {thread_id} Delivery tag: {delivery_tag} Message body: {body}')
@@ -72,13 +75,16 @@ def consume_message(connection, channel, queue_name, consume_fn):
         if len(ch.consumer_tags) == 0:
             log_error("Nobody is listening. Stopping the consumer!")
             return
-        worker_thread = threading.Thread(target=do_work, args=(ch, delivery_tag, body))
-        worker_thread.daemon = True
-        worker_thread.start()
-        worker_thread.join(timeout=TIMEOUT)  # Wait for the thread to complete, with a timeout
 
-        if worker_thread.is_alive():
+        # Use ThreadPoolExecutor to handle the message processing with a timeout
+        future = executor.submit(do_work, ch, delivery_tag, body)
+
+        try:
+            # Wait for the task to complete within the timeout period
+            future.result(timeout=TIMEOUT)
+        except concurrent.futures.TimeoutError:
             log_error(f"Timeout occurred for message {body}, acking the message and moving on")
+            future.cancel()
             acknowledge_message(ch, delivery_tag, body, success=False)
 
     channel.basic_consume(queue=queue_name, on_message_callback=on_message, auto_ack=False)
@@ -89,4 +95,5 @@ def consume_message(connection, channel, queue_name, consume_fn):
     except KeyboardInterrupt:
         channel.stop_consuming()
     finally:
+        executor.shutdown(wait=True)
         connection.close()
