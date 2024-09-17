@@ -145,7 +145,7 @@ class TestFullCatalog(unittest.TestCase):
     def test_on_search_with_empty_locations_present(self, mock_flagged_items_fn):
         mock_flagged_items_fn.return_value = self.mock_flagged_items
         current_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        filepath = os.path.join(current_path, "resources/on_search_with_empty_locations_present.json")
+        filepath = os.path.join(current_path, "resources/test.json")
         with open(filepath) as f:
             json_payload = json.load(f)
             items, offers, locations = transform_full_on_search_payload_into_default_lang_items(json_payload)

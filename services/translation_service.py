@@ -1,13 +1,14 @@
 from logger.custom_logging import log
 from utils.hash_utils import get_md5_hash
 from utils.mongo_utils import get_mongo_collection
-from utils.bhashini_utils import translate
+from utils.bhashini_utils import translate, transliterate
 from utils.redis_utils import get_redis_cache, set_redis_cache
+from utils.transliteration_model_utils import transliterate_using_model
 
 
 def get_translated_text(text, source_lang="en", target_lang="hi"):
     # Check if data present in cache? if yes return else translate
-    cache_key = f"{text}_{source_lang}_{target_lang}"
+    cache_key = f"translation_{text}_{source_lang}_{target_lang}"
     cache_translation = get_redis_cache(cache_key)
 
     if cache_translation:
@@ -23,6 +24,30 @@ def get_translated_text(text, source_lang="en", target_lang="hi"):
         if translated_text:
             set_redis_cache(cache_key, translated_text)
         return translated_text
+
+
+def get_transliterated_text_old(text, source_lang="en", target_lang="hi"):
+    # Check if data present in cache? if yes return else translate
+    cache_key = f"{text}_{source_lang}_{target_lang}"
+    cache_translation = get_redis_cache(cache_key)
+
+    if cache_translation:
+        # log(f"translation found in cache of {text} for {target_lang}")
+        cache_translation = cache_translation.decode('utf-8')
+        return cache_translation
+    else:
+        translated_text = transliterate({
+            "text": text,
+            "source_language": source_lang,
+            "target_language": target_lang,
+        })
+        if translated_text:
+            set_redis_cache(cache_key, translated_text)
+        return translated_text
+
+
+def get_transliterated_text(text, source_lang="en", target_lang="hi"):
+    return transliterate_using_model(target_lang, text)
 
 
 def get_word_translation(text, language):

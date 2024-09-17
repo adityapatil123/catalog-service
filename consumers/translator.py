@@ -10,6 +10,7 @@ from transformers.translation import translate_items_into_target_language, trans
 from utils.redis_utils import init_redis_cache
 from utils.rabbitmq_utils import declare_queue, consume_message, open_connection_and_channel_if_not_already_open, \
     open_connection, create_channel, close_channel_and_connection
+from utils.transliteration_model_utils import create_language_models
 
 
 def consume_fn(message_string):
@@ -38,6 +39,7 @@ def run_consumer():
     queue_name = get_config_by_name('TRANSLATOR_QUEUE_NAME')
     connection, channel = open_connection_and_channel_if_not_already_open()
     declare_queue(channel, queue_name)
+    create_language_models()
     consume_message(connection, channel, queue_name=queue_name, consume_fn=consume_fn)
 
 
