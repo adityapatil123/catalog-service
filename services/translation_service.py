@@ -47,7 +47,19 @@ def get_transliterated_text_old(text, source_lang="en", target_lang="hi"):
 
 
 def get_transliterated_text(text, source_lang="en", target_lang="hi"):
-    return transliterate_using_model(target_lang, text)
+    # Check if data present in cache? if yes return else translate
+    cache_key = f"{text}_{source_lang}_{target_lang}"
+    cache_translation = get_redis_cache(cache_key)
+
+    if cache_translation:
+        # log(f"translation found in cache of {text} for {target_lang}")
+        cache_translation = cache_translation.decode('utf-8')
+        return cache_translation
+    else:
+        translated_text = transliterate_using_model(target_lang, text)
+        if translated_text:
+            set_redis_cache(cache_key, translated_text)
+        return translated_text
 
 
 def get_word_translation(text, language):
