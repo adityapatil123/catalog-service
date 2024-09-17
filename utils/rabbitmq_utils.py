@@ -1,8 +1,8 @@
 import functools
 import threading
-
+import time
 import pika
-
+from pika.exceptions import StreamLostError, ConnectionClosedByBroker
 
 from config import get_config_by_name
 from logger.custom_logging import log, log_error
@@ -51,7 +51,23 @@ def declare_queue(channel, queue_name):
 
 # @retry(3, errors=StreamLostError)
 def publish_message_to_queue(channel, exchange, routing_key, body, properties=None):
-    channel.basic_publish(exchange=exchange, routing_key=routing_key, body=body, properties=properties)
+    retry_attempts = 5
+    attempt = 0
+    while attempt < retry_attempts:
+        try:
+            channel.basic_publish(exchange=exchange, routing_key=routing_key, body=body, properties=properties)
+            break  # Exit loop if successful
+        except (StreamLostError, ConnectionResetError, ConnectionClosedByBroker) as e:
+            log_error(f"Connection lost while publishing, retrying... Attempt {attempt + 1}/{retry_attempts}")
+            attempt += 1
+            if attempt == retry_attempts:
+                log_error(f"Failed to publish after {retry_attempts} attempts: {e}")
+                raise
+            else:
+                # Add a backoff before retrying
+                time.sleep(2 ** attempt)
+                # Re-establish the connection and channel
+                connection, channel = open_connection_and_channel_if_not_already_open()
 
 
 def consume_message(connection, channel, queue_name, consume_fn):

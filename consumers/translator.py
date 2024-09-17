@@ -30,7 +30,10 @@ def consume_fn(message_string):
     except Exception as e:
         log_error(f"Got an exception while translating {e}")
     finally:
-        close_channel_and_connection(rabbitmq_channel, rabbitmq_connection)
+        if rabbitmq_channel.is_open:
+            close_channel_and_connection(rabbitmq_channel, rabbitmq_connection)
+        else:
+            log_error("Channel was already closed, skipping closing operation")
 
 
 @retry(AMQPConnectionError, delay=5, jitter=(1, 3))
