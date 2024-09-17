@@ -16,6 +16,10 @@ root.addHandler(handler)
 pika_logger = logging.getLogger('pika')
 pika_logger.setLevel(logging.WARNING)
 
+# Set the logging level for fairseq to WARNING to suppress info and debug logs
+fairseq_logger = logging.getLogger('fairseq')
+fairseq_logger.setLevel(logging.WARNING)
+
 
 def log(*args,**kwargs):
     logging.info(*args)
