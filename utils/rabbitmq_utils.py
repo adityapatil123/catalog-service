@@ -46,7 +46,7 @@ def create_channel(connection):
 
 def declare_queue(channel, queue_name):
     # channel.exchange_declare("test-x", exchange_type="x-delayed-message", arguments={"x-delayed-type": "direct"})
-    channel.queue_declare(queue=queue_name)
+    channel.queue_declare(queue=queue_name, durable=True)
 
 
 # @retry(3, errors=StreamLostError)
