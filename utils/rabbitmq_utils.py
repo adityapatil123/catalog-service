@@ -55,7 +55,10 @@ def publish_message_to_queue(channel, exchange, routing_key, body, properties=No
     attempt = 0
     while attempt < retry_attempts:
         try:
-            channel.basic_publish(exchange=exchange, routing_key=routing_key, body=body, properties=properties)
+            channel.basic_publish(exchange=exchange, routing_key=routing_key, body=body,
+                                  properties=pika.BasicProperties(
+                                      delivery_mode=2  # make message persistent
+                                  ))
             break  # Exit loop if successful
         except (StreamLostError, ConnectionResetError, ConnectionClosedByBroker) as e:
             log_error(f"Connection lost while publishing, retrying... Attempt {attempt + 1}/{retry_attempts}")
