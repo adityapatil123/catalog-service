@@ -46,7 +46,7 @@ def create_channel(connection):
 
 def declare_queue(channel, queue_name):
     # channel.exchange_declare("test-x", exchange_type="x-delayed-message", arguments={"x-delayed-type": "direct"})
-    channel.queue_declare(queue=queue_name, durable=True)
+    channel.queue_declare(queue=queue_name)
 
 
 # @retry(3, errors=StreamLostError)
@@ -121,3 +121,38 @@ def consume_message(connection, channel, queue_name, consume_fn):
         thread.join()
 
     connection.close()
+
+
+def consume_message_sync(connection, channel, queue_name, consume_fn):
+    def callback(ch, delivery_tag):
+        try:
+            channel.basic_ack(delivery_tag)
+            log(f"Ack message for Delivery tag: {delivery_tag} !")
+        except Exception as e:
+            log_error(f"Error acknowledging message for Delivery tag: {delivery_tag}: {e}")
+
+    def on_message(ch, method_frame, header_frame, body):
+        delivery_tag = method_frame.delivery_tag
+        log(f"Processing message with Delivery tag: {delivery_tag}")
+
+        try:
+            # Call the provided consume function
+            consume_fn(body)
+
+            # Acknowledge the message only after processing is successful
+            callback(ch, delivery_tag)
+        except Exception as e:
+            log_error(f"Error processing message with Delivery tag: {delivery_tag}: {e}")
+            # Optionally handle message rejection or requeue logic here
+
+    channel.basic_consume(queue=queue_name, on_message_callback=on_message, auto_ack=False)
+    log('Waiting for messages (synchronously):')
+
+    try:
+        # This will now block and handle messages synchronously
+        channel.start_consuming()
+    except KeyboardInterrupt:
+        channel.stop_consuming()
+
+    connection.close()
+

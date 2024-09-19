@@ -9,7 +9,7 @@ from logger.custom_logging import log_error
 from transformers.translation import translate_items_into_target_language, translate_locations_into_target_language
 from utils.redis_utils import init_redis_cache
 from utils.rabbitmq_utils import declare_queue, consume_message, open_connection_and_channel_if_not_already_open, \
-    open_connection, create_channel, close_channel_and_connection
+    open_connection, create_channel, close_channel_and_connection, consume_message_sync
 from utils.transliteration_model_utils import create_language_models
 
 
@@ -43,7 +43,7 @@ def run_consumer():
     connection, channel = open_connection_and_channel_if_not_already_open()
     declare_queue(channel, queue_name)
     create_language_models()
-    consume_message(connection, channel, queue_name=queue_name, consume_fn=consume_fn)
+    consume_message_sync(connection, channel, queue_name=queue_name, consume_fn=consume_fn)
 
 
 if __name__ == "__main__":
