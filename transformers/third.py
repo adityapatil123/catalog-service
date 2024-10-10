@@ -28,3 +28,9 @@ def update_provider_items_with_manual_flags(provider_id, provider_items):
             else item.get("auto_provider_flag", False)
         item['in_stock'] = populate_in_stock(item)
     return provider_items
+
+
+def update_provider_items_with_in_stock(provider_items):
+    for item in provider_items:
+        item['in_stock'] = populate_in_stock(item)
+    return provider_items
