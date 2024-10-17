@@ -34,6 +34,6 @@ def publish_message(rabbitmq_channel, queue_name, message):
 
 if __name__ == '__main__':
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    local_filepath = os.path.join(current_dir, f'resources/simple_on_search.json')
+    local_filepath = os.path.join(current_dir, f'resources/test.json')
     req_type = "full"
     publish_message_for_transform(local_filepath, req_type)
