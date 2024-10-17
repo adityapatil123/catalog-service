@@ -213,6 +213,31 @@ def get_all_manually_flagged_items_for_provider(provider_id):
     return items
 
 
+def update_entities_with_new_provider_search_tags(index_name, provider_id, new_search_tags):
+    log(f"Updating {provider_id} {index_name} with tags: {new_search_tags}")
+    # Create the query for update_by_query
+    query_body = {
+        "script": {
+            "source": "ctx._source.provider_search_tags = params.new_search_tags",
+            "lang": "painless",
+            "params": {
+                "new_search_tags": new_search_tags
+            }
+        },
+        "query": {
+            "term": {
+                "provider_details.id": provider_id
+            }
+        }
+    }
+
+    es = get_elasticsearch_client()
+
+    # Perform the update_by_query operation
+    response = es.update_by_query(index=index_name, body=query_body)
+    return response
+
+
 if __name__ == '__main__':
     resp = search_documents("items", {
         "query": {

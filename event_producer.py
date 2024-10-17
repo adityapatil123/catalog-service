@@ -26,6 +26,15 @@ def publish_message_for_transform(file_path, request_type):
         close_channel_and_connection(rabbitmq_channel, rabbitmq_connection)
 
 
+def publish_message_for_provider_search_tags(message):
+    rabbitmq_connection = open_connection()
+    rabbitmq_channel = create_channel(rabbitmq_connection)
+    queue_name = get_config_by_name('ELASTIC_SEARCH_QUEUE_NAME')
+    declare_queue(rabbitmq_channel, queue_name)
+    publish_message_to_queue(rabbitmq_channel, exchange='', routing_key=queue_name, body=json.dumps(message))
+    close_channel_and_connection(rabbitmq_channel, rabbitmq_connection)
+
+
 def publish_message(rabbitmq_channel, queue_name, message):
     log(f"Sending message for {message['index']} to {queue_name}")
     publish_message_to_queue(rabbitmq_channel, exchange='', routing_key=queue_name,
@@ -37,3 +46,7 @@ if __name__ == '__main__':
     local_filepath = os.path.join(current_dir, f'resources/test.json')
     req_type = "full"
     publish_message_for_transform(local_filepath, req_type)
+    # publish_message_for_provider_search_tags({"request_type": "search-tags-update",
+    #                                           "provider_id": "provider_id",
+    #                                           "provider_search_tags": ["T1", "T2"]} )
+

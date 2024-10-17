@@ -10,8 +10,7 @@ def get_provider_search_tags(provider_id):
     try:
         url = f'{get_config_by_name("OMS_ENDPOINT")}/api/widget/tags/providers/all'
         log(f"Making provider-search-tags call on OMS for {provider_id}")
-        response = requests.get(url, params={"providerId": provider_id})
-        print(f"Got respponse as {response}")
+        response = requests.get(url, params={"providerId": provider_id}, timeout=10)
         return json.loads(response.text)
     except Exception as e:
         log_error(f"Got exception for error: {e}")
