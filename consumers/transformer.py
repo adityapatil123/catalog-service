@@ -70,6 +70,9 @@ def publish_documents_splitting_per_rabbitmq_limit(queue, index, docs, lang=None
         if current_batch:
             message = {"index": index, "data": current_batch}
             message.update({"lang": lang}) if lang else None
+            # 1 - es dumper
+            publish_message(rabbitmq_channel, queue, message)
+            # 2 -trans
             publish_message(rabbitmq_channel, queue, message)
 
         close_channel_and_connection(rabbitmq_channel, rabbitmq_connection)

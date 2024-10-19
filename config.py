@@ -26,6 +26,7 @@ class Config:
     REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
     REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
     REDIS_DB = int(os.getenv("REDIS_DB", "0"))
+    REDIS_OR_SENTINEL = os.getenv("REDIS_OR_SENTINEL", "REDIS")
     BHASHINI_USERID = os.getenv("BHASHINI_USERID", "userid")
     BHASHINI_ULCA_API_KEY = os.getenv("BHASHINI_ULCA_API_KEY", "apikey")
     LANGUAGE_LIST = [lang.strip() for lang in os.getenv("LANGUAGE_LIST", "").split(",")]
