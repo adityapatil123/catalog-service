@@ -18,6 +18,101 @@ def translate(data):
     pipeline_data = {
         "pipelineTasks": [
             {
+                "taskType": "translation",
+                "config": {
+                    "language": {
+                        "sourceLanguage": data['source_language'],
+                        "targetLanguage": data['target_language']
+                    }
+                }
+            }
+        ],
+        "pipelineRequestConfig": {
+            "pipelineId": "64392f96daac500b55c543cd"
+        }
+    }
+
+    headers = {
+        'userID': os.getenv('BHASHINI_USERID'),
+        'ulcaApiKey': os.getenv('BHASHINI_ULCA_API_KEY'),
+        'Content-Type': 'application/json'
+    }
+
+    retries = Retry(
+        total=3,
+        backoff_factor=1,
+        status_forcelist=[500, 502, 503, 504, 521],
+        allowed_methods=["POST"],  # need this
+    )
+    s = Session()
+    s.mount("https://", HTTPAdapter(max_retries=retries))
+    # s.post(url)  # Raise requests.exceptions.RetryError
+
+    pipeline_response = s.post(bhashini_pipeline_url, headers=headers, json=pipeline_data)
+    json_res = pipeline_response.json()
+
+    # Prepare object for translation
+    pipeline_response_config = json_res['pipelineResponseConfig']
+    trans_service_id = None
+
+    for each_resp in pipeline_response_config:
+        all_config = each_resp['config']
+        for each_config in all_config:
+            if (each_config['language']['sourceLanguage'] == data['source_language'] and
+                    each_config['language']['targetLanguage'] == data['target_language']):
+                trans_service_id = each_config['serviceId']
+                break
+        if trans_service_id:
+            break
+
+    translation_data = {
+        "pipelineTasks": [
+            {
+                "taskType": "translation",
+                "config": {
+                    "language": {
+                        "sourceLanguage": data['source_language'],
+                        "targetLanguage": data['target_language']
+                    },
+                    "serviceId": trans_service_id,
+                    "isSentence": True
+                }
+            }
+        ],
+        "inputData": {
+            "input": [
+                {
+                    "source": data['text']
+                }
+            ]
+        }
+    }
+
+    headers.update({
+        json_res['pipelineInferenceAPIEndPoint']['inferenceApiKey']['name']:
+            json_res['pipelineInferenceAPIEndPoint']['inferenceApiKey']['value']
+    })
+
+    translate_response = requests.post(bhashini_translate_url, headers=headers, json=translation_data)
+    translation = None
+    try:
+        translation = translate_response.json()
+    except JSONDecodeError:
+        log_error(f"Got response text as: {translate_response.text}")
+
+    translated_text = None
+    if translation and translation.get('pipelineResponse') and len(translation['pipelineResponse']) > 0:
+        if len(translation['pipelineResponse'][0]['output']) > 0:
+            translated_text = translation['pipelineResponse'][0]['output'][0]['target']
+
+    return translated_text
+
+
+def transliterate(data):
+    # Create a pipeline
+    pipeline_data = {
+        "pipelineTasks": [
+            {
                 "taskType": "transliteration",
                 "config": {
                     "language": {
@@ -112,6 +207,7 @@ if __name__ == '__main__':
     data = {
         "text": "apple",
         "source_language": "en",
-        "target_language": "bn"
+        "target_language": "mr"
     }
+    print(transliterate(data))
     print(translate(data))
