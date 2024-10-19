@@ -134,7 +134,6 @@ def consume_fn(message_string):
 def run_consumer():
     init_mongo_database()
     init_elastic_search()
-    init_redis_cache()
     queue_name = get_config_by_name('ELASTIC_SEARCH_QUEUE_NAME')
     connection, channel = open_connection_and_channel_if_not_already_open()
     declare_queue(channel, queue_name)
