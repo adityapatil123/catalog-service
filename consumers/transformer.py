@@ -3,10 +3,11 @@ import time
 
 from bson.objectid import ObjectId
 from elasticsearch.helpers import BulkIndexError
-from pika.exceptions import AMQPConnectionError
+from pika.exceptions import AMQPConnectionError, AMQPChannelError
 from retry import retry
 
 from config import get_config_by_name
+from consumers import run_generic_consumer
 from event_producer import publish_message
 from logger.custom_logging import log, log_error
 from services.mongo_service import update_on_search_dump_status
@@ -16,9 +17,7 @@ from utils.json_utils import datetime_serializer
 from utils.elasticsearch_utils import init_elastic_search, update_entities_with_new_provider_search_tags
 from utils.json_utils import clean_nones
 from utils.mongo_utils import get_mongo_collection, collection_find_one, init_mongo_database
-from utils.rabbitmq_utils import declare_queue, consume_message, open_connection_and_channel_if_not_already_open, \
-    open_connection, close_channel_and_connection, create_channel
-from utils.redis_utils import init_redis_cache
+from utils.rabbitmq_utils import declare_queue, open_connection, close_channel_and_connection, create_channel
 
 
 def split_docs_into_batches(docs, max_size_mbs):
@@ -70,9 +69,6 @@ def publish_documents_splitting_per_rabbitmq_limit(queue, index, docs, lang=None
         if current_batch:
             message = {"index": index, "data": current_batch}
             message.update({"lang": lang}) if lang else None
-            # 1 - es dumper
-            publish_message(rabbitmq_channel, queue, message)
-            # 2 -trans
             publish_message(rabbitmq_channel, queue, message)
 
         close_channel_and_connection(rabbitmq_channel, rabbitmq_connection)
@@ -130,15 +126,12 @@ def consume_fn(message_string):
         update_on_search_dump_status(doc_id, "FAILED", str(e)) if doc_id else None
 
 
-@retry(AMQPConnectionError, delay=5, jitter=(1, 3))
+@retry(exceptions=(AMQPConnectionError, AMQPChannelError), delay=5, jitter=(1, 3), max_delay=60)
 def run_consumer():
     init_mongo_database()
     init_elastic_search()
     queue_name = get_config_by_name('ELASTIC_SEARCH_QUEUE_NAME')
-    connection, channel = open_connection_and_channel_if_not_already_open()
-    declare_queue(channel, queue_name)
-    consume_message(connection, channel, queue_name=queue_name,
-                    consume_fn=consume_fn)
+    run_generic_consumer(queue_name, consume_fn)
 
 
 if __name__ == "__main__":

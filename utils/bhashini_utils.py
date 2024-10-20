@@ -207,7 +207,7 @@ if __name__ == '__main__':
     data = {
         "text": "apple",
         "source_language": "en",
-        "target_language": "mr"
+        "target_language": "kn"
     }
     print(transliterate(data))
     print(translate(data))
