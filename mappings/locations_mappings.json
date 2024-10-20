@@ -466,10 +466,7 @@
         "type": "float"
       },
       "provider_search_tags": {
-        "type": "nested",
-        "properties": {
-          "type": "keyword"
-        }
+        "type": "keyword"
       }
     }
   }
