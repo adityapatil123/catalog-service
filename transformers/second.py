@@ -291,9 +291,6 @@ def enrich_items_using_tags_and_categories(items, categories, serviceabilities, 
 
     enrich_is_first_flag_for_items(items, categories)
 
-    # TODO - This is to be removed after UI change
-    [enrich_categories_in_item(i, categories) for i in items]
-
     [enrich_serviceability_in_item(i, serviceabilities) for i in items]
     [enrich_variant_group_in_item(i, variant_groups) for i in items]
     [enrich_customisation_group_in_item(i, customisation_groups, cust_items) for i in items]
