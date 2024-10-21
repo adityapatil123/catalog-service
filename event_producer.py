@@ -4,6 +4,7 @@ import os
 from config import get_config_by_name
 from logger.custom_logging import log
 from services.mongo_service import dump_on_search_payload
+from utils.instrumentation_utils import MeasureTime
 from utils.json_utils import datetime_serializer
 from utils.rabbitmq_utils import publish_message_to_queue, open_connection, create_channel, \
     close_channel_and_connection, declare_queue
@@ -35,6 +36,7 @@ def publish_message_for_provider_search_tags(message):
     close_channel_and_connection(rabbitmq_channel, rabbitmq_connection)
 
 
+@MeasureTime
 def publish_message(rabbitmq_channel, queue_name, message):
     log(f"Sending message for {message['index']} to {queue_name}")
     publish_message_to_queue(rabbitmq_channel, exchange='', routing_key=queue_name,

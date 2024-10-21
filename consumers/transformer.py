@@ -13,6 +13,7 @@ from logger.custom_logging import log, log_error
 from services.mongo_service import update_on_search_dump_status
 from transformers.full_catalog import transform_full_on_search_payload_into_default_lang_items
 from transformers.incr_catalog import transform_incr_on_search_payload_into_final_items
+from utils.instrumentation_utils import MeasureTime
 from utils.json_utils import datetime_serializer
 from utils.elasticsearch_utils import init_elastic_search, update_entities_with_new_provider_search_tags
 from utils.json_utils import clean_nones
@@ -44,6 +45,7 @@ def split_docs_into_batches(docs, max_size_mbs):
     return batches
 
 
+@MeasureTime
 def publish_documents_splitting_per_rabbitmq_limit(queue, index, docs, lang=None):
     if len(docs) > 0:
         rabbitmq_connection = open_connection()
@@ -74,6 +76,7 @@ def publish_documents_splitting_per_rabbitmq_limit(queue, index, docs, lang=None
         close_channel_and_connection(rabbitmq_channel, rabbitmq_connection)
 
 
+@MeasureTime
 def consume_fn(message_string):
     doc_id = None
     try:

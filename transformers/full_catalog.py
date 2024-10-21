@@ -7,6 +7,7 @@ from transformers.second import enrich_items_using_tags_and_categories, enrich_o
 from transformers.third import update_provider_items_with_in_stock, update_provider_items_and_locations_with_search_tags
 from transformers.translation import translate_items_into_target_language
 from utils.dictionary_utils import safe_get_in
+from utils.instrumentation_utils import MeasureTime
 
 
 def enrich_items_with_location_availabilities(final_items, final_locations):
@@ -20,6 +21,7 @@ def enrich_items_with_location_availabilities(final_items, final_locations):
             safe_get_in(item, ["location_details", "local_id"], None), [])
 
 
+@MeasureTime
 def transform_full_on_search_payload_into_default_lang_items(payload):
     provider_map = flatten_full_on_search_payload_to_provider_map(payload)
     final_items = []
