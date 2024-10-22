@@ -14,4 +14,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Run the consumer application
-CMD ["python", "-m", "consumers.translator"]
+CMD ["python", "-m", "consumers.new_translator"]

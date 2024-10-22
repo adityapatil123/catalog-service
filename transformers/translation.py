@@ -1,3 +1,4 @@
+from logger.custom_logging import log
 from services import translation_service as ts
 from utils.instrumentation_utils import MeasureTime
 from utils.parallel_processing_utils import io_bound_parallel_computation
@@ -5,21 +6,45 @@ from utils.parallel_processing_utils import io_bound_parallel_computation
 
 @MeasureTime
 def translate_items_into_target_language(items, target_lang):
-    # io_bound_parallel_computation(lambda x: translate_an_item(x, target_lang), items)
-    for x in items:
-        translate_an_item(x, target_lang)
-    return items
+    log(f"Translating {len(items)} items into lang: {target_lang}")
+
+    def translate_with_logging(x):
+        try:
+            return translate_an_item(x, target_lang)
+        except Exception as e:
+            # log(f"Got the error while translating item: {e}")
+            return None  # Returning None or you can handle it differently
+
+    # Using io_bound_parallel_computation to translate in parallel
+    new_items = io_bound_parallel_computation(translate_with_logging, items)
+
+    # Filtering out any None results due to exceptions
+    final_items = [x for x in new_items if x is not None]
+    log(f"Done with translation for {len(final_items)} / {len(items)} items into lang: {target_lang}")
+    return final_items
 
 
 @MeasureTime
 def translate_locations_into_target_language(locations, target_lang):
-    # io_bound_parallel_computation(lambda x: translate_an_item(x, target_lang), items)
-    for loc in locations:
-        translate_a_location(loc, target_lang)
-    return locations
+    log(f"Translating {len(locations)} locations into lang: {target_lang}")
+
+    def translate_with_logging(x):
+        try:
+            return translate_a_location(x, target_lang)
+        except Exception as e:
+            # log(f"Got the error while translating location: {e}")
+            return None  # Returning None or you can handle it differently
+
+    # Using io_bound_parallel_computation to translate in parallel
+    new_locations = io_bound_parallel_computation(translate_with_logging, locations)
+
+    # Filtering out any None results due to exceptions
+    final_locations = [x for x in new_locations if x is not None]
+    log(f"Done with translation for {len(final_locations)} / {len(locations)} locations into lang: {target_lang}")
+    return final_locations
 
 
-@MeasureTime
+# @MeasureTime
 def translate_an_item(i, target_lang):
     i["language"] = target_lang
     i["item_details"]["descriptor"] = translate_item_descriptor(i["item_details"]["descriptor"], target_lang)
@@ -30,7 +55,7 @@ def translate_an_item(i, target_lang):
     return i
 
 
-@MeasureTime
+# @MeasureTime
 def translate_a_location(i, target_lang):
     i["language"] = target_lang
     i["provider_details"]["descriptor"] = translate_item_descriptor(i["provider_details"]["descriptor"],

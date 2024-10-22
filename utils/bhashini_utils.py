@@ -39,7 +39,7 @@ def translate(data):
     }
 
     retries = Retry(
-        total=3,
+        total=0,
         backoff_factor=1,
         status_forcelist=[500, 502, 503, 504, 521],
         allowed_methods=["POST"],  # need this
@@ -48,7 +48,7 @@ def translate(data):
     s.mount("https://", HTTPAdapter(max_retries=retries))
     # s.post(url)  # Raise requests.exceptions.RetryError
 
-    pipeline_response = s.post(bhashini_pipeline_url, headers=headers, json=pipeline_data)
+    pipeline_response = s.post(bhashini_pipeline_url, headers=headers, json=pipeline_data, timeout=3)
     json_res = pipeline_response.json()
 
     # Prepare object for translation
@@ -93,7 +93,7 @@ def translate(data):
             json_res['pipelineInferenceAPIEndPoint']['inferenceApiKey']['value']
     })
 
-    translate_response = requests.post(bhashini_translate_url, headers=headers, json=translation_data)
+    translate_response = requests.post(bhashini_translate_url, headers=headers, json=translation_data, timeout=10)
     translation = None
     try:
         translation = translate_response.json()
@@ -108,6 +108,7 @@ def translate(data):
     return translated_text
 
 
+# @MeasureTime
 def transliterate(data):
     # Create a pipeline
     pipeline_data = {
@@ -134,7 +135,7 @@ def transliterate(data):
     }
 
     retries = Retry(
-        total=3,
+        total=0,
         backoff_factor=1,
         status_forcelist=[500, 502, 503, 504, 521],
         allowed_methods=["POST"],  # need this
@@ -143,7 +144,7 @@ def transliterate(data):
     s.mount("https://", HTTPAdapter(max_retries=retries))
     # s.post(url)  # Raise requests.exceptions.RetryError
 
-    pipeline_response = s.post(bhashini_pipeline_url, headers=headers, json=pipeline_data)
+    pipeline_response = s.post(bhashini_pipeline_url, headers=headers, json=pipeline_data, timeout=3)
     json_res = pipeline_response.json()
 
     # Prepare object for translation
@@ -188,7 +189,7 @@ def transliterate(data):
             json_res['pipelineInferenceAPIEndPoint']['inferenceApiKey']['value']
     })
 
-    translate_response = requests.post(bhashini_translate_url, headers=headers, json=translation_data)
+    translate_response = requests.post(bhashini_translate_url, headers=headers, json=translation_data, timeout=3)
     translation = None
     try:
         translation = translate_response.json()

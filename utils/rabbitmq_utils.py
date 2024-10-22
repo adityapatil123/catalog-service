@@ -7,20 +7,6 @@ import pika
 from config import get_config_by_name
 from logger.custom_logging import log, log_error
 
-global_connection, global_channel = None, None
-
-
-def open_connection_and_channel_if_not_already_open():
-    global global_connection, global_channel
-    if global_connection and global_connection.is_open:
-        log("Getting old connection and channel")
-        return global_connection, global_channel
-    else:
-        log("Getting new connection and channel")
-        global_connection = open_connection()
-        global_channel = create_channel(global_connection)
-        return global_connection, global_channel
-
 
 def open_connection():
     rabbitmq_host = get_config_by_name('RABBITMQ_HOST')
