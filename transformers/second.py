@@ -367,7 +367,7 @@ def build_timing_dictionary(item, location_id):
     filtered_tags = [t for t in tags if t.get("code") == "timing" and any(
         [c.get("code") == "location" and c.get("value") == location_id for c in t.get("list", [])])]
     time_data = []
-    for tag_type in ["ALL", "Order", 'Delivery', 'Self-Pickup']:
+    for tag_type in ["ALL", "Order", 'Delivery', 'Self-Pickup', "All"]:
         for tag in filtered_tags:
             value = get_start_and_end_which_contains_given_tag(tag, tag_type)
             if value is not None:
