@@ -19,6 +19,7 @@ def translate_locations_into_target_language(locations, target_lang):
     return locations
 
 
+@MeasureTime
 def translate_an_item(i, target_lang):
     i["language"] = target_lang
     i["item_details"]["descriptor"] = translate_item_descriptor(i["item_details"]["descriptor"], target_lang)
@@ -29,6 +30,7 @@ def translate_an_item(i, target_lang):
     return i
 
 
+@MeasureTime
 def translate_a_location(i, target_lang):
     i["language"] = target_lang
     i["provider_details"]["descriptor"] = translate_item_descriptor(i["provider_details"]["descriptor"],
