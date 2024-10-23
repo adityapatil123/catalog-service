@@ -1,11 +1,12 @@
 import json
 import time
-from typing import Dict
+from typing import Dict, List
 import pika
 from pika.exceptions import AMQPConnectionError, AMQPChannelError, StreamLostError
 from retry import retry
 from config import get_config_by_name
 from logger.custom_logging import log_error, log
+from utils.json_utils import datetime_serializer, clean_nones
 
 
 class RabbitMQHandler:
@@ -96,6 +97,111 @@ class RabbitMQHandler:
             except:
                 pass
 
+
+class MultiQueueHandler(RabbitMQHandler):
+    def __init__(self):
+        super().__init__()
+        # Initialize queues we'll need
+        self.es_dumper_queue = get_config_by_name('ES_DUMPER_QUEUE_NAME')
+        self.translator_queue = get_config_by_name('TRANSLATOR_QUEUE_NAME')
+        self._declare_queues()
+
+    def _declare_queues(self):
+        """Declare all required queues"""
+        if self.channel and self.channel.is_open:
+            self.channel.queue_declare(queue=self.es_dumper_queue)
+            self.channel.queue_declare(queue=self.translator_queue)
+
+    def _connect(self):
+        """Override _connect to declare both queues"""
+        super()._connect()
+        self._declare_queues()
+
+    def ensure_connection(self):
+        """Override ensure_connection to declare both queues"""
+        super().ensure_connection()
+        self._declare_queues()
+
+    @retry(exceptions=(AMQPConnectionError, AMQPChannelError), tries=3, delay=2, backoff=2)
+    def publish_batch_to_queue(self, queue_name: str, message: Dict):
+        """Publish batch to specified queue"""
+        self.ensure_connection()
+        try:
+            message_body = json.dumps(message, default=datetime_serializer)
+
+            self.channel.basic_publish(
+                exchange='',
+                routing_key=queue_name,
+                body=message_body,
+                properties=pika.BasicProperties(
+                    content_type='application/json'
+                ),
+                mandatory=True
+            )
+            log(f"Successfully published batch to {queue_name}")
+        except Exception as e:
+            log_error(f"Error publishing batch to {queue_name}: {e}")
+            raise
+
+    def publish_to_es_dumper(self, index: str, docs: List[Dict], batch_size_mb: int = 20):
+        """Publish documents to ES dumper queue with size limit"""
+        if not docs:
+            return
+
+        current_batch = []
+        current_size = 0
+        max_size = batch_size_mb * 1024 * 1024  # Convert to bytes
+
+        for doc in docs:
+            doc_str = json.dumps(doc, default=datetime_serializer)
+            doc_size = len(doc_str.encode('utf-8'))
+
+            if current_size + doc_size > max_size:
+                self.publish_batch_to_queue(
+                    self.es_dumper_queue,
+                    {"index": index, "data": current_batch}
+                )
+                current_batch = [doc]
+                current_size = doc_size
+            else:
+                current_batch.append(doc)
+                current_size += doc_size
+
+        if current_batch:
+            self.publish_batch_to_queue(
+                self.es_dumper_queue,
+                {"index": index, "data": current_batch}
+            )
+
+    def publish_to_translator(self, index: str, docs: List[Dict], lang: str, batch_size_mb: int = 20):
+        """Publish documents to translator queue with size limit"""
+        if not docs:
+            return
+
+        current_batch = []
+        current_size = 0
+        max_size = batch_size_mb * 1024 * 1024
+
+        for doc in docs:
+            doc_str = json.dumps(doc, default=datetime_serializer)
+            doc_size = len(doc_str.encode('utf-8'))
+
+            if current_size + doc_size > max_size:
+                self.publish_batch_to_queue(
+                    self.translator_queue,
+                    {"index": index, "data": current_batch, "lang": lang}
+                )
+                current_batch = [doc]
+                current_size = doc_size
+            else:
+                current_batch.append(doc)
+                current_size += doc_size
+
+        if current_batch:
+            self.publish_batch_to_queue(
+                self.translator_queue,
+                {"index": index, "data": current_batch, "lang": lang}
+            )
 
 
 def run_generic_consumer_new(queue_name: str, process_fn):
